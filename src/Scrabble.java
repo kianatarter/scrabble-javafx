@@ -9,12 +9,18 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
-
-import java.io.File;
+import java.io.*;
 import java.io.FileNotFoundException;
 import java.util.*;
 
 
+/**
+ * CS 351: Scrabble
+ *
+ * Main Class to run Scrabble GUI
+ *
+ * @author Kiana Tarter
+ */
 public class Scrabble extends Application {
     static List<Character> playerTray = new ArrayList<>();
     static Button[] trayButton = new Button[7];
@@ -23,42 +29,67 @@ public class Scrabble extends Application {
     static Label tilesLeft = new Label();
     static Button done = new Button("Submit Move");
     static Trie dictionary = new Trie();
+    static GridPane boardGrid;
 
+    /**
+     * Size of the board
+     */
     public static int boardSize = 15;
     static String[][] board = {
             {"3.","..","..",".2","..","..","..","3.","..","..","..",".2","..","..","3."},
             {"..","2.","..","..","..",".3","..","..","..",".3","..","..","..","2.",".."},
-            {"..","..","2.","..","..","..",".2","..",".2","..","..",".","2.","..",".."},
+            {"..","..","2.","..","..","..",".2","..",".2","..","..","..","2.","..",".."},
             {".2","..","..","2.","..","..","..",".2","..","..","..","2.","..","..",".2"},
             {"..","..","..","..","2.","..","..","..","..","..","2.","..","..","..",".."},
-            {"..","3.","..","..",".","3.","..","..","..","3.","..","..",".","3.",".."},
-            {"..",".",".3","..","..",".",".3",".",".3","..","..",".",".3","..",".."},
+            {"..","3.","..","..","..","3.","..","..","..","3.","..","..","..","3.",".."},
+            {"..","..",".3","..","..","..",".3","..",".3","..","..","..",".3","..",".."},
             {"3.","..","..",".2","..","..","..","2.","..","..","..",".2","..","..","3."},
-            {"..",".",".3","..","..",".",".3",".",".3","..","..",".",".3","..",".."},
-            {"..","3.","..","..",".","3.","..","..","..","3.","..","..",".","3.",".."},
+            {"..","..",".3","..","..","..",".3","..",".3","..","..","..",".3","..",".."},
+            {"..","3.","..","..","..","3.","..","..","..","3.","..","..","..","3.",".."},
             {"..","..","..","..","2.","..","..","..","..","..","2.","..","..","..",".."},
             {".2","..","..","2.","..","..","..",".2","..","..","..","2.","..","..",".2"},
-            {"..","..","2.","..","..","..",".2","..",".2","..","..",".","2.","..",".."},
-            {"..","2.","..","..",".","3.","..","..","..","3.","..","..","..",".2",".."},
+            {"..","..","2.","..","..","..",".2","..",".2","..","..","..","2.","..",".."},
+            {"..","2.","..","..","..","3.","..","..","..","3.","..","..","..",".2",".."},
             {"3.","..","..",".2","..","..","..","3.","..","..","..",".2","..","..","3."}
     };
     static List<Character> tileBag = new ArrayList<>();
     static boolean isPlaced = false;
+    static int humanScore = 0;
+    static int CPUScore = 0;
 
+    static Label humanScoreLabel = new Label("Human Score: " + humanScore);
+    static Label CPUScoreLabel = new Label("CPU Score: " + CPUScore);
+
+    static String[][] boardBefore = null;
+
+    /**
+     * Method to handle GUI components
+     * @param stage the primary stage for this application, onto which
+     * the application scene can be set.
+     * Applications may create other stages, if needed, but they will not be
+     * primary stages.
+     * @throws Exception
+     */
     @Override
     public void start(Stage stage) throws Exception {
+        Main.size = boardSize;
         HBox root = new HBox();
-        GridPane grid = initBoard(board);
-        grid.setStyle("-fx-background-color: #C3A995;");
+        boardGrid = initBoard(board);
+        boardGrid.setStyle("-fx-background-color: #C3A995;");
 
 
-        root.getChildren().addAll(grid,initPanel());
+        root.getChildren().addAll(boardGrid,initPanel());
         Scene scene = new Scene(root);
         stage.setTitle("Scrabble");
         stage.setScene(scene);
         stage.show();
     }
 
+    /**
+     * Method to initialize a board GUI
+     * @param board the string representation of the board
+     * @return the GridPane representation of the board
+     */
     public GridPane initBoard (String[][] board){
         GridPane grid = new GridPane();
 
@@ -82,6 +113,8 @@ public class Scrabble extends Application {
                 } else {
                     color = "#E3DAC9"; // cream - plain
                 }
+                int finalR = r;
+                int finalC = c;
 
                 Button cell = new Button();
                 cell.setStyle("-fx-background-color: " + color +
@@ -90,13 +123,18 @@ public class Scrabble extends Application {
                         "; -fx-border-radius: 8");
                 cell.setPrefSize(50, 50);
                 cell.setOnAction(event -> {
+                    if (board[finalR][finalC].charAt(0) == ' ') {
+                        return;
+                    }
                     if (trayIndex == -1){
                         cell.setStyle("-fx-background-color: " + color +
                                 "; -fx-border-color: #000000" +
                                 "; -fx-background-radius: 8" +
                                 "; -fx-border-radius: 8");
                     } else {
-                        isPlaced = true;
+                        if (!isPlaced){
+                            boardBefore = copyBoard(board);
+                        }
                         cell.setStyle("-fx-background-color: " +
                                 getTintedCell(color) +
                                 "; -fx-border-color: gold" +
@@ -109,16 +147,21 @@ public class Scrabble extends Application {
                             enterBlank.setContentText("What letter would you like to play?");
 
                             Optional<String> result = enterBlank.showAndWait();
-                            result.ifPresent(cell::setText);
-
+                            result.ifPresent(character -> {
+                                char chosen = Character.toUpperCase(character.charAt(0));
+                                cell.setText(String.valueOf(chosen));
+                                board[finalR][finalC] = " " + chosen;
+                            });
                         } else {
-                            cell.setText(String.valueOf(playerTray.get(trayIndex)));
+                            char played = Character.toLowerCase(playerTray.get(trayIndex));
+                            cell.setText(String.valueOf(Character.toUpperCase(played)));
+                            board[finalR][finalC] = " " + played;
                         }
                         playerTray.set(trayIndex, null);
-                        tileBag.remove(trayIndex);
                         updateTilesLeft();
                         updateTrayUI();
                         trayIndex = -1;
+                        isPlaced = true;
                         done.setDisable(false);
                     }
                 });
@@ -126,15 +169,18 @@ public class Scrabble extends Application {
                 grid.setHgap(3);
                 grid.setVgap(3);
                 grid.setPadding(new Insets(10));
-
                 grid.add(cell, c, r);
-
             }
         }
         return grid;
     }
 
-    static String getTintedCell(String color){
+    /**
+     * Get a tinted version of the cell selected
+     * @param color the current color before the tint is applied
+     * @return the tinted version of the color
+     */
+    public static String getTintedCell(String color){
         switch (color){
             case "#F5DEB3":
                 return "#E8C98A";
@@ -159,7 +205,10 @@ public class Scrabble extends Application {
 
     }
 
-    static void initTileBag() {
+    /**
+     * Initializes a tile bag
+     */
+    public static void initTileBag() {
         String tiles = "AAAAAAAAABBCCDDDDEEEEEEEEEEEEFFGGGHHIIIIIIIIIJKLLLL" +
                 "MMNNNNNNOOOOOOOOPPQRRRRRRSSSSTTTTTTUUUUVVWWXYYZ**";
         for (char c : tiles.toCharArray()) {
@@ -168,6 +217,10 @@ public class Scrabble extends Application {
         Collections.shuffle(tileBag);
     }
 
+    /**
+     * Initializes a panel for the side controls
+     * @return Vbox representing controls
+     */
     public VBox initPanel (){
         VBox sidePanel = new VBox(10);
         sidePanel.setPrefWidth(400);
@@ -180,8 +233,6 @@ public class Scrabble extends Application {
         Label trayLabel = new Label("Your tray:");
         trayLabel.setStyle("-fx-font-weight: bold;");
         trayLabel.setFont(Font.font("Verdana"));
-
-
 
         HBox tray = new HBox(3);
         for (int i = 0; i < 7; i++){
@@ -242,6 +293,7 @@ public class Scrabble extends Application {
             updateTilesLeft();
             initTray.setVisible(false);
             CPU.CPUMove();
+
         });
 
         initTray.setOnMouseEntered(event -> {
@@ -260,6 +312,11 @@ public class Scrabble extends Application {
         });
         initTray.setPrefWidth(160);
 
+        humanScoreLabel.setStyle("-fx-font-weight: bold;");
+        humanScoreLabel.setFont(Font.font("Verdana"));
+
+        CPUScoreLabel.setStyle("-fx-font-weight: bold;");
+        CPUScoreLabel.setFont(Font.font("Verdana"));
 
         // skip turn button
         Button skipTurn = new Button("Skip Turn?");
@@ -269,6 +326,9 @@ public class Scrabble extends Application {
                 "; -fx-background-radius: 8" +
                 "; -fx-border-radius: 8");
         skipTurn.setPrefWidth(160);
+        skipTurn.setOnAction(event -> {
+            CPU.CPUMove();
+        });
 
         // tiles remaining in bag
         tilesLeft.setText("Tiles left: " + tileBag.size());
@@ -280,41 +340,36 @@ public class Scrabble extends Application {
         done.setDisable(!isPlaced);
 
         done.setOnAction(event -> {
+            checkHumanMove();
             CPU.CPUMove();
-
         });
 
 
         sidePanel.getChildren().addAll(humanScore, computerScore,
                 trayLabel, tray, initTray, skipTurn, done,
-                tilesLeft);
+                tilesLeft, humanScoreLabel, CPUScoreLabel);
 
         return sidePanel;
     }
 
-    static String getCPUTray(List<Character> CPUTray){
-        StringBuilder sb = new StringBuilder();
-        for (Character c : CPUTray){
-            sb.append(c);
-        }
-        return sb.toString();
-    }
 
-    static void drawPlayerTiles(int traySlot){
+    /**
+     * Method to draw tiles for the human player
+     * @param traySlot the index of the tray slot
+     */
+    public static void drawPlayerTiles(int traySlot){
         if (!tileBag.isEmpty()){
             char tile = tileBag.remove(0);
             playerTray.add(tile);
             trayButton[traySlot].setText(String.valueOf(tile));
-
-            //TODO: add letter value to buttons
-//            String val = String.valueOf(Main.letterVals(tile));
-//            Label letterVal = new Label(val);
-
         }
 
     }
 
-    static void drawCPUTiles(){
+    /**
+     * Draws tiles for the CPU player
+     */
+    public static void drawCPUTiles(){
         while (CPUTray.size() < 7){
             Character tile = getTile(tileBag);
             if (tile == null){
@@ -325,21 +380,35 @@ public class Scrabble extends Application {
         }
     }
 
-    static Character getTile(List<Character> tilebag){
+    /**
+     * Get a random tile from the tilebag
+     * @param tilebag the tile bag
+     * @return the random tile
+     */
+    public static Character getTile(List<Character> tilebag){
         // TODO: check who scores higher if bag is empty
         if (tilebag.isEmpty()){
-            return null;
+            if (humanScore > CPUScore){
+                Gamestate winner = Gamestate.HUMAN_WINS;
+            } else {
+                Gamestate winner = Gamestate.CPU_WINS;
+
+            }
         }
         Random random = new Random();
         int randIndex = random.nextInt(tilebag.size());
         return tilebag.remove(randIndex);
     }
 
-    static void refreshTiles(List<Character> playerTray){
+    /**
+     * Replace tray tiles once they've been played
+     * @param playerTray current tray
+     */
+    public static void refreshTiles(List<Character> playerTray){
         for (int i = 0; i < playerTray.size(); i++){
             if (playerTray.get(i) == null){
                 Character newTile = getTile(tileBag);
-                if (newTile == null){
+                if (newTile != null){
                     playerTray.set(i,newTile);
                 }
             }
@@ -347,8 +416,10 @@ public class Scrabble extends Application {
 
         while (playerTray.size() < 7){
             Character newTile = getTile(tileBag);
-            if (newTile == null){
+            if (newTile != null){
                 playerTray.add(newTile);
+            } else {
+                break;
             }
         }
         updateTilesLeft();
@@ -374,11 +445,151 @@ public class Scrabble extends Application {
         tilesLeft.setText("Tiles left: " + tileBag.size());
     }
 
+    static String[][] copyBoard(String[][] original){
+        String[][] copy = new String[original.length][original[0].length];
+        for (int r = 0; r < original.length; r++){
+            for (int c = 0; c < original[0].length; c++){
+                copy[r][c] = original[r][c];
+            }
+        }
+        return copy;
+    }
+
+    static void checkHumanMove(){
+        if (boardBefore == null){
+            System.out.println("no board saved");
+            return;
+        }
+
+        List<int[]> move = Main.getMove(boardBefore, board);
+
+        if (move.isEmpty()){
+            System.out.println("no tiles detected");
+            return;
+        }
+
+        String word = Main.getWord(board, move);
+        System.out.println(word);
 
 
+        int score = Main.validBoardChange(boardBefore, board);
+        System.out.println("Word being checked: " + Main.getWord(board, Main.getMove(boardBefore, board)));
+        System.out.println("Main dictionary knows CAT? " + Main.dictionary.search("cat"));
 
-    
+        if (score < 0){
+            System.out.println("Invalid Move.");
+            // TODO: remove tiles for invalid move
+            return;
+        }
+        System.out.println(score);
 
+        humanScore += score;
+        humanScoreLabel.setText("Human Score: " + humanScore);
+
+        refreshTiles(playerTray);
+        updateTrayUI();
+
+
+        boardBefore = null;
+        isPlaced = false;
+
+
+    }
+    static void redrawBoard() {
+        boardGrid.getChildren().clear();
+
+        for (int r = 0; r < boardSize; r++) {
+            for (int c = 0; c < boardSize; c++) {
+                String token = board[r][c];
+                String color;
+
+                if (token.charAt(0) == ' ') {
+                    color = "#ffe3a0"; // placed tile
+                } else if (token.equals("3.")) {
+                    color = "#1B4D3E";
+                } else if (token.equals("2.")) {
+                    color = "#E36888";
+                } else if (token.equals(".3")) {
+                    color = "#457B9D";
+                } else if (token.equals(".2")) {
+                    color = "#105666";
+                } else {
+                    color = "#E3DAC9";
+                }
+
+                Button cell = new Button();
+                cell.setPrefSize(50, 50);
+                cell.setStyle("-fx-background-color: " + color +
+                        "; -fx-border-color: #000000" +
+                        "; -fx-background-radius: 8" +
+                        "; -fx-border-radius: 8");
+
+                if (token.charAt(0) == ' ') {
+                    cell.setText(String.valueOf(token.charAt(1)));
+                    cell.setTextFill(Paint.valueOf("#FFFFFF"));
+                }
+
+                int finalR = r;
+                int finalC = c;
+
+                cell.setOnAction(event -> {
+                    if (board[finalR][finalC].charAt(0) == ' ') {
+                        return;
+                    }
+
+                    if (trayIndex == -1) {
+                        return;
+                    }
+
+                    if (!isPlaced) {
+                        boardBefore = copyBoard(board);
+                    }
+
+                    cell.setStyle("-fx-background-color: " +
+                            getTintedCell(color) +
+                            "; -fx-border-color: gold" +
+                            "; -fx-background-radius: 8" +
+                            "; -fx-border-radius: 8");
+                    cell.setTextFill(Paint.valueOf("#FFFFFF"));
+
+                    if (playerTray.get(trayIndex) == '*') {
+                        TextInputDialog enterBlank = new TextInputDialog();
+                        enterBlank.setTitle("Blank Tile!");
+                        enterBlank.setContentText("What letter would you like to play?");
+
+                        Optional<String> result = enterBlank.showAndWait();
+                        result.ifPresent(character -> {
+                            char chosen = Character.toUpperCase(character.charAt(0));
+                            cell.setText(String.valueOf(chosen));
+                            board[finalR][finalC] = " " + chosen;
+                        });
+                    } else {
+                        char played = Character.toLowerCase(playerTray.get(trayIndex));
+                        cell.setText(String.valueOf(Character.toUpperCase(played)));
+                        board[finalR][finalC] = " " + played;
+                    }
+
+                    playerTray.set(trayIndex, null);
+                    updateTrayUI();
+                    trayIndex = -1;
+                    isPlaced = true;
+                    done.setDisable(false);
+                });
+
+                boardGrid.add(cell, c, r);
+            }
+        }
+
+        boardGrid.setHgap(3);
+        boardGrid.setVgap(3);
+        boardGrid.setPadding(new Insets(10));
+        boardGrid.setStyle("-fx-background-color: #C3A995;");
+    }
+
+    /**
+     * Main program to run GUI
+     * @param args command line args (ignored)
+     */
     public static void main(String[] args) {
         try (Scanner reader = new Scanner(new File("sowpods.txt"))){
             while (reader.hasNextLine()){
@@ -391,11 +602,9 @@ public class Scrabble extends Application {
             System.out.println("dictionary not found");
             throw new RuntimeException(e);
         }
+        Main.size = boardSize;
+        Main.dictionary = dictionary;
+        Solver.dictionary = dictionary;
         launch(args);
-
-
     }
-
-
-
 }

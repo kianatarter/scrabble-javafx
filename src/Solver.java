@@ -3,15 +3,21 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 
+/**
+ * CS 351: Scrabble
+ *
+ * Main program to run the solver
+ *
+ * @author Kiana Tarter
+ *
+ */
 public class Solver {
     static Trie dictionary = new Trie();
     static List<Square> hand = new ArrayList<>();
 
-
     static void setHand(List<Square> handNew) {
         hand = handNew;
     }
-
 
     static List<int[]> getAdjacent(String[][] board) {
         List<int[]> anchors = new ArrayList<>();
@@ -48,9 +54,6 @@ public class Solver {
             if (boardEmpty){
                 anchors.add(new int[]{boardSize / 2, boardSize / 2});
             }
-
-
-
         return anchors;
     }
 
@@ -63,16 +66,22 @@ public class Solver {
 
         for (Move m : horizontalWords) {
             if (m.tilesPlayed.isEmpty()) continue;
-            if (!dictionary.search(m.word.toLowerCase())) continue;
+
             String[][] result = Move.playMove(board, m);
             List<int[]> move = Main.getMove(board, result);
             if (move.isEmpty()) continue;
             if (!Main.isConnected(board, move)) continue;
-            boolean horizontal = move.size() == 1 || move.get(0)[0] == move.get(1)[0];
+            if (!Main.allCrossWordsLegal(board,result,move)) continue;
+
+            String actualWord = Main.getWord(result,move);
+            if(!dictionary.search(actualWord.toLowerCase())) continue;
+
+            boolean horizontal = Main.isHorizontalMove(result,move);
             int score = Main.getScore(board, result, move, m.word) +
                     Main.scoreCrossWord(result, board, move, horizontal);
             if (score > max) {
                 max = score;
+                m.word = actualWord;
                 maxMove = m;
                 maxMove.score = score;
             }
@@ -86,21 +95,24 @@ public class Solver {
             List<int[]> move = Main.getMove(board, result);
             if (move.isEmpty()) continue;
             if (!Main.isConnected(board, move)) continue;
+            if (!Main.allCrossWordsLegal(board,result, move)) continue;
 
-            boolean horizontal = move.size() == 1 || move.get(0)[0] == move.get(1)[0];
+            String actualWord = Main.getWord(result,move);
+            if(!dictionary.search(actualWord.toLowerCase())) continue;
+
+            boolean horizontal = Main.isHorizontalMove(result,move);
             int score = Main.getScore(board, result, move, m.word) +
                     Main.scoreCrossWord(result, board, move, horizontal);
 
             if (score > max) {
                 max = score;
+                m.word = actualWord;
                 m.score = score;
                 maxMove = m;
             }
         }
         System.out.println("horizontal words found: " + horizontalWords.size());
         System.out.println("vertical words found: " + verticalWords.size());
-
-
         return maxMove;
     }
 
@@ -317,6 +329,10 @@ public class Solver {
         return result;
     }
 
+    /**
+     * Main program to read in dictionary
+     * @param args the command line args
+     */
     public static void main(String[] args) {
 
         String dictPath = args[0];
@@ -353,9 +369,6 @@ public class Solver {
                 }
                 System.out.println();
             }
-
-
-
             System.out.println("Tray: " + trayLine);
 
             // find best move
@@ -383,12 +396,6 @@ public class Solver {
                 }
                 System.out.println();
             }
-
-
-
         }
-
-
-
     }
 }

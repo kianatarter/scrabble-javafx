@@ -3,10 +3,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * CS 351: Scrabble
+ *
+ * Main class used to implement score checking
+ *
+ * @author Kiana Tarter
+ */
 public class Main {
     static Trie dictionary = new Trie();
     static int size = 0;
 
+    /**
+     * Main program to read in dictionary + run score checking logic
+     *
+     * @param args command-line args
+     *
+     */
     public static void main (String[] args){
         String dictPath = args[0];
 
@@ -96,8 +109,15 @@ public class Main {
 
     }
 
+    /**
+     * Checks if two input boards show a valid change
+     * @param board the before board
+     * @param afterBoard the board after a move/change is applied
+     * @return -1 if invalid, otherwise return the score of the move
+     */
     public static int validBoardChange(String[][] board, String[][] afterBoard) {
         List<int[]> move = getMove(board,afterBoard);
+
         if (move.isEmpty()) {
             return -1;
         }
@@ -112,8 +132,16 @@ public class Main {
         } else {
             return -1;
         }
+
+
+
     }
 
+    /**
+     * Read in the given input board
+     * @param in Scanner to read standard input
+     * @return the String 2D array representing the board
+     */
     public static String[][] readBoard(Scanner in){
         size = in.nextInt();
         in.nextLine();
@@ -140,10 +168,10 @@ public class Main {
     }
 
     /**
-     *
-     * @param before
-     * @param after
-     * @return
+     * Get the move given two boards
+     * @param before the board before a move is applied
+     * @param after the board after a move is applied
+     * @return a list of coordinates representing the move
      */
     public static List<int[]> getMove(String[][] before, String[][] after){
         List<int[]> move = new ArrayList<>();
@@ -160,6 +188,12 @@ public class Main {
         return move;
     }
 
+    /**
+     * Get the word from a move
+     * @param after the board after the move is played
+     * @param move the list of coords representing the move
+     * @return the String representing the word
+     */
     public static String getWord(String[][] after, List<int[]> move){
         StringBuilder sb = new StringBuilder();
 
@@ -190,6 +224,11 @@ public class Main {
     }
 
 
+    /**
+     * Transpose the board
+     * @param board the board to transpose
+     * @return the board after it's rows and cols have been switched
+     */
     public static String[][] transposeBoard(String[][] board){
         int rows = board.length;
         int cols = board[0].length;
@@ -205,11 +244,21 @@ public class Main {
     }
 
 
+    /**
+     * Check if the word is legal
+     * @param word the word being checked
+     * @return true if legal, false if not
+     */
     public static boolean isLegal(String word){
         return dictionary.search(word.toLowerCase());
     }
 
-    static int letterVals (char c){
+    /**
+     * Point value of each letter
+     * @param c the letter
+     * @return the integer value of the letter
+     */
+    public static int letterVals (char c){
         if (Character.isUpperCase(c)) {
             return 0;
         }
@@ -235,7 +284,15 @@ public class Main {
         }
     }
 
-    static int getScore(String[][] before, String[][] after, List<int[]> move, String word){
+    /**
+     * Get the score of a given play
+     * @param before the board before the play
+     * @param after the board after the play
+     * @param move the move played
+     * @param word the word played
+     * @return the score of the move
+     */
+    public static int getScore(String[][] before, String[][] after, List<int[]> move, String word){
         int total = 0;
         int totalWordMult = 1;
         int wordMult = 1;
@@ -293,7 +350,15 @@ public class Main {
         return total;
     }
 
-    static int scoreCrossWord(String[][] after, String[][] before,
+    /**
+     * Get the score of the crossword
+     * @param after the board after the move is applied
+     * @param before the board before the move is applied
+     * @param move the move applied
+     * @param horizontal boolean to check if the word is horizontal
+     * @return score of the crosswords
+     */
+    public static int scoreCrossWord(String[][] after, String[][] before,
                               List<int[]> move, boolean horizontal){
         int total = 0;
 
@@ -398,7 +463,7 @@ public class Main {
     static boolean isBoardEmpty(String[][] board){
         for (int i = 0; i < board.length; i++){
             for (int j = 0; j < board[0].length; j++){
-                if (board[i][j].charAt(0) != ' '){
+                if (board[i][j].charAt(0) == ' '){
                     return false;
                 }
             }
