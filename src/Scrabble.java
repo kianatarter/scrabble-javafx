@@ -10,7 +10,8 @@ import javafx.stage.Stage;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
 
-
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.*;
 
 
@@ -21,8 +22,7 @@ public class Scrabble extends Application {
     static List<Character> CPUTray = new ArrayList<>();
     static Label tilesLeft = new Label();
     static Button done = new Button("Submit Move");
-
-
+    static Trie dictionary = new Trie();
 
     public static int boardSize = 15;
     static String[][] board = {
@@ -241,6 +241,7 @@ public class Scrabble extends Application {
             updateTrayUI();
             updateTilesLeft();
             initTray.setVisible(false);
+            CPU.CPUMove();
         });
 
         initTray.setOnMouseEntered(event -> {
@@ -277,6 +278,11 @@ public class Scrabble extends Application {
         done.setStyle("-fx-font-weight: bold;");
         done.setFont(Font.font("Verdana"));
         done.setDisable(!isPlaced);
+
+        done.setOnAction(event -> {
+            CPU.CPUMove();
+
+        });
 
 
         sidePanel.getChildren().addAll(humanScore, computerScore,
@@ -369,10 +375,25 @@ public class Scrabble extends Application {
     }
 
 
+
+
     
 
     public static void main(String[] args) {
+        try (Scanner reader = new Scanner(new File("sowpods.txt"))){
+            while (reader.hasNextLine()){
+                String line = reader.nextLine().trim().toLowerCase();
+                if (!line.isEmpty()){
+                    dictionary.insert(line);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("dictionary not found");
+            throw new RuntimeException(e);
+        }
         launch(args);
+
+
     }
 
 

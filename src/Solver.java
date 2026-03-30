@@ -16,11 +16,13 @@ public class Solver {
     static List<int[]> getAdjacent(String[][] board) {
         List<int[]> anchors = new ArrayList<>();
         int boardSize = board.length;
+        boolean boardEmpty = true;
 
         for (int r = 0; r < board.length; r++) {
             for (int c = 0; c < board[0].length; c++) {
                 // only check for tiles adjacent to a letter
                 if (board[r][c].charAt(0) == ' ') {
+                    boardEmpty = false;
                     if (isInBounds(boardSize, new int[]{r - 1, c}) &&
                             board[r - 1][c].charAt(0) == '.') {
                         anchors.add(new int[]{r - 1, c});
@@ -43,6 +45,12 @@ public class Solver {
                 }
             }
         }
+            if (boardEmpty){
+                anchors.add(new int[]{boardSize / 2, boardSize / 2});
+            }
+
+
+
         return anchors;
     }
 
@@ -89,6 +97,8 @@ public class Solver {
                 maxMove = m;
             }
         }
+        System.out.println("horizontal words found: " + horizontalWords.size());
+        System.out.println("vertical words found: " + verticalWords.size());
 
 
         return maxMove;
