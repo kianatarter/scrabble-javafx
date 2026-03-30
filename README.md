@@ -15,7 +15,8 @@ The program shows a GUI representation of the Scrabble game
   for simplicity.
 - Square multipliers are read from the before board
   since the after board will have the score covered.
-- The human player must go first, or skip their turn
+- The CPU player must go first
+- CPU player will go first once the trays are initialized
 
 
 ## How to Play

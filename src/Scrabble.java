@@ -504,7 +504,7 @@ public class Scrabble extends Application {
                 String color;
 
                 if (token.charAt(0) == ' ') {
-                    color = "#ffe3a0"; // placed tile
+                    color = "#F5DEB3"; // placed tile
                 } else if (token.equals("3.")) {
                     color = "#1B4D3E";
                 } else if (token.equals("2.")) {
